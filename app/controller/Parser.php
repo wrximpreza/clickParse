@@ -86,11 +86,25 @@ class Parser
     public function loadOutput()
     {
         $load = $this->output->load();
+
         if (!$load) {
             return false;
+        }else{
+            $data = new stdClass();
+            $data->items = $load;
+            $data->end = true;
+            $data->page = 1;
+            $data->totapages = count($load);
+            header("Content-type: application/json; charset=utf-8");
+            header("Cache-Control: must-revalidate");
+            header("Pragma: no-cache");
+            header("Expires: -1");
+            $json = json_encode($data);
+            print $json;
+            exit();
         }
-        $this->lists = $this->checkEmail($load);
-        return $this->createExcel($this->lists);
+        /*$this->lists = $this->checkEmail($load);
+        return $this->createExcel($this->lists);*/
     }
 
     /**
@@ -98,8 +112,9 @@ class Parser
      * @param data Array of emails
      * @return mixed link on the file
      */
-    private function createExcel($data)
+    protected function createExcel($data)
     {
+
         try {
             // Создаем объект класса PHPExcel
             $xls = new PHPExcel();
@@ -129,22 +144,22 @@ class Parser
                 $sheet->setCellValueByColumnAndRow(
                     0,
                     $i,
-                    $item['url']
+                    $item->url
                 );
                 $sheet->setCellValueByColumnAndRow(
                     1,
                     $i,
-                    $item['title']
+                    $item->title
                 );
                 $sheet->setCellValueByColumnAndRow(
                     2,
                     $i,
-                    $item['email']
+                    $item->email
                 );
                 $sheet->setCellValueByColumnAndRow(
                     3,
                     $i,
-                    $item['status']
+                    $item->status
                 );
                 $i++;
             }
@@ -156,12 +171,15 @@ class Parser
                 return $link;
             } else {
                 $this->log->error('Файл не создался');
-                $this->msg->error('Файл не создался');
+                //$this->msg->error('Файл не создался');
+
             }
 
         } catch (Exception $e) {
             $this->log->error('Message: ' . $e->getMessage() . ', File: ' . $e->getFile() . ', Line: ' . $e->getLine());
+
         }
+
         return false;
 
     }
@@ -170,13 +188,13 @@ class Parser
      * @param $urls Find emails from array links of pages
      * @return array Array emails from the links
      */
-    private function checkEmail($urls)
+    protected function checkEmail($url)
     {
         $results = array();
         $status = 0;
         $j = 0;
 
-        foreach ($urls as $url) {
+        //foreach ($urls as $url) {
 
 
             //foreach ($this->contactUrl as $item) {
@@ -187,7 +205,13 @@ class Parser
             } else {
                 $url = trim($url);
                 $url = parse_url($url);
-                $url = $url['scheme'] . '://' . $url['host'];
+
+                if(isset($url['scheme'])){
+                    $url = $url['scheme'] . '://' . $url['host'];
+                }else{
+                    $url = 'http://' . $url['path'];
+                }
+
             }
 
 
@@ -204,6 +228,15 @@ class Parser
             if ($curl->response != '' && $curl->errorCode >= 500) {
 
                 $this->log->error('Error: url (' . trim($url) . ') ' . $curl->errorCode . ': ' . $curl->errorMessage);
+                $results = array(
+                    'url' => $url,
+                    'title' => '',
+                    'email' => 'Страница не открылась или открылась с ошибкой',
+                    'status' => 0,
+                    'message'=>'Error: url (' . trim($url) . ') ' . $curl->errorCode . ': ' . $curl->errorMessage
+                );
+
+
                 //$this->msg->info('По ссылке '.trim($url) .' нет email.');
             } else {
                 $emails = PhpMailExtractor::extract($curl->response);
@@ -221,10 +254,6 @@ class Parser
 
                 }
 
-                /*if($j==0){
-
-                    exit();
-                }*/
 
                 if (count($emails) > 0) {
                     foreach ($emails as $email) {
@@ -241,17 +270,27 @@ class Parser
                             }
 
                         }
-                        $results[] = array(
+                        $results = array(
                             'url' => $url,
                             'title' => $title,
                             'email' => $email,
-                            'status' => 1
+                            'status' => 1,
+                            'message'=> 'По ссылке '.trim($url).'  email есть - '.$email
                         );
                         //$this->msg->info('По ссылке '.trim($url).'  email есть - '.$email);
                     }
                     $status = 1;
 
                 } else {
+
+                    $results = array(
+                        'url' => $url,
+                        'title' => '',
+                        'email' => 'Нет email',
+                        'status' => 0,
+                        'message'=>'По ссылке '.trim($url) .' нет email'
+                    );
+
                     //$this->msg->info('По ссылке '.trim($url) .' нет email');
                 }
             }
@@ -260,21 +299,8 @@ class Parser
 
             //}
 
-            $j++;
 
-            if ($status === 0) {
-
-                $results[] = array(
-                    'url' => $url,
-                    'title' => '',
-                    'email' => 'Нет email',
-                    'status' => 0
-                );
-
-            }
-
-            $status = 0;
-        }
+        //}
 
         return $results;
 

@@ -17,7 +17,7 @@ class fileFind implements parserInterface
      */
     public function __construct($urls)
     {
-        $this->url = explode(PHP_EOL, $urls);
+        $this->url = explode("\n", $urls);
     }
 
     /**
@@ -25,17 +25,13 @@ class fileFind implements parserInterface
      */
     public function load()
     {
-
-        return $this->url;
+        $urls = array();
+        foreach ($this->url as $item) {
+            if($item!='')
+                $urls[] = $item;
+        }
+        return $urls;
     }
 
-    /**
-     * @return array
-     */
-    private function loadFile()
-    {
-        $file = file("file/url.txt");
-        return $file;
-    }
 
 }

@@ -29,6 +29,44 @@ class Main extends Parser
         $client = new Parser();
 
         if ($this->input->post('type')) {
+            $type = $this->input->post('type');
+
+            if($type == 'checkEmail'){
+
+                $result = $client->checkEmail($this->input->post('item'));
+                header("Content-type: application/json; charset=utf-8");
+                header("Cache-Control: must-revalidate");
+                header("Pragma: no-cache");
+                header("Expires: -1");
+                $json = json_encode($result);
+                print $json;
+                exit();
+
+            }
+            
+            if($type == 'writeEmail'){
+
+                $items = json_decode($this->input->post('items'));
+
+                $result = $client->createExcel($items);
+
+                if ($result) {
+
+                    $message = '<p>Файл успешно создан</p>';
+                    //$this->msg->success('Файл успешно создан.');
+                    $message = $message . $this->sendEmail($this->input->post('email'), $result);
+                    echo $message;
+
+                } else {
+                    //$this->msg->error('Ошибка при создании файла');
+                    $this->log->error('Ошибка при создании файла');
+                    echo 'Ошибка при создании файла';
+                }
+                exit();
+            }
+
+            
+
             if (!$this->input->post('text')) {
                 $message = 'Вы не ввели данные в форму';
                 $this->msg->error('Вы не ввели данные в форму');
@@ -39,26 +77,15 @@ class Main extends Parser
                 } else {
                     $client->setOutput(new fileFind($this->input->post('text')));
                 }
-                $link = $client->loadOutput();
-                $lists = $client->lists;
+                $client->loadOutput();
 
-                if ($link) {
-                    $message = '<p>Файл успешно создан</p>';
-
-                    $this->msg->success('Файл успешно создан.');
-
-                    $message = $message . $this->sendEmail($this->input->post('email'), $link);
-                } else {
-                    //$this->msg->error('Ошибка при создании файла');
-                    //$this->log->error('Ошибка при создании файла');
-                }
 
             }
         }
 
-
-
         include_once(_ROOT . '/app/view/index.php');
+
+
     }
 
     /**

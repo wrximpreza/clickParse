@@ -23,6 +23,9 @@
             color: #fff;
         }
     </style>
+
+
+
 </head>
 
 <body>
@@ -63,6 +66,9 @@
         </div>
     <?php endif; ?>
 
+    <div class="progress" id="progressbar">
+        <div class="determinate" style="width: 0%"></div>
+    </div>
 
     <div class="row">
         <div class="col s12">
@@ -71,7 +77,7 @@
                 <li class="tab col s3"><a href="#request">По запросам</a></li>
             </ul>
         </div>
-        <div id="host" class="col s12">
+        <div  class="col s12">
             <div class="row">
                 <div class="col s12">
                     <div class="card-panel red">
@@ -82,7 +88,7 @@
                 </div>
             </div>
             <div class="row">
-                <form class="col s12" method="post">
+                <form class="col s12" method="post" id="host">
                     <input type="hidden" name="type" value="host"/>
                     <div class="row">
                         <div class="input-field col s6">
@@ -100,7 +106,7 @@
                             <div class="row">
 
                                 <div class="col s12">
-                                    <button style="float:right;" class="btn waves-effect waves-light" type="submit"
+                                    <button id="start"   style="float:right;" class="btn waves-effect waves-light" type="button"
                                             name="action">Старт
                                         <i class="material-icons right">send</i>
                                     </button>
@@ -117,7 +123,7 @@
         <div id="request" class="col s12">
 
             <div class="row">
-                <form class="col s12" method="post">
+                <form class="col s12" method="post" id="request">
                     <input type="hidden" name="type" value="request"/>
                     <div class="row">
                         <div class="input-field col s6">
@@ -142,7 +148,7 @@
 
 
                                 <div class="col s12">
-                                    <button style="float:right;" class="btn waves-effect waves-light" type="submit"
+                                    <button id="start"  style="float:right;" class="btn waves-effect waves-light" type="button"
                                             name="action">Старт
                                         <i class="material-icons right">send</i>
                                     </button>
@@ -220,6 +226,150 @@
             $('#textarea1').trigger('autoresize');
         });
         $('#textarea').trigger('autoresize');
+
+    });
+
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/piecon/0.5.0/piecon.min.js"></script>
+<script>
+
+    var in_process = false;
+
+    $(function() {
+
+        $("#progressbar").hide('fast');
+
+        $('#request #start').on('click', function(event) {
+            event.stopPropagation();
+
+            $("#progressbar .determinate").css({"width": "0%"});
+
+            $("#progressbar").show('fast');
+
+            $.ajax({
+                url: window.location.href,
+                method:"POST",
+                data: {
+                    "type": "request",
+                    "text": $("#request #textarea1").val(),
+                    "email":$("#request #email").val(),
+                    "count":$("#request #count").val(),
+                },
+                dataType: 'json',
+                success: function(data){
+
+                    //do_export(1, data);
+
+                },
+                error:function(xhr, status, errorThrown) {
+                    alert(errorThrown+'\n'+xhr.responseText);
+                }
+
+            });
+
+            return false;
+
+        });
+
+
+        $('#host #start').on('click', function(event) {
+            event.stopPropagation();
+
+            $("#progressbar .determinate").css({"width": "0%"});
+
+            $("#progressbar").show('fast');
+
+            $.ajax({
+                url: window.location.href,
+                method:"POST",
+                data: {
+                    "type": "host",
+                    "text": $("#host #textarea").val(),
+                    "email":$("#host #email").val()
+                },
+                dataType: 'json',
+                success: function(data){
+                    var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
+                    var items = data.items;
+                    var results = [];
+                    do_export(items, file, 0, results);
+
+                },
+                error:function(xhr, status, errorThrown) {
+                    alert(errorThrown+'\n'+xhr.responseText);
+                }
+
+            });
+
+            return false;
+        });
+
+
+        function do_export(items, file, page, results)
+        {
+
+            var totalpages = items.length;
+
+            $.ajax({
+                url: window.location.href,
+                method:"POST",
+                data: {
+                    "type": "checkEmail",
+                    "item": items[page],
+                    "file": file
+                },
+                dataType: 'json',
+                success: function(data){
+
+                    if(items.length != page)
+                    {
+                        results.push(data);
+                        do_export(items, file, page+1, results);
+                        Piecon.setProgress(Math.round(100*(page+1)/totalpages));
+                        var p = 100*(page+1)/totalpages;
+                        $("#progressbar .determinate").css({"width" : p+"%"});
+                    }
+                    else
+                    {
+                        if(items.length == page)
+                        {
+                            $.ajax({
+                                url: window.location.href,
+                                method:"POST",
+                                data: {
+                                    "type": "writeEmail",
+                                    "items": JSON.stringify(results),
+                                    "file": file
+                                },
+                                dataType: 'json',
+                                success: function(data){
+
+
+                                },
+                                error:function(xhr, status, errorThrown) {
+
+
+                                }
+
+
+                            });
+
+                            Piecon.setProgress(100);
+                            $("#progressbar .determinate").css({"width" : "100%"});
+
+                        }
+                    }
+
+                },
+                error:function(xhr, status, errorThrown) {
+
+                    return false;
+                }
+
+
+            });
+        }
 
     });
 
