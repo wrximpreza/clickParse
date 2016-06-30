@@ -177,7 +177,7 @@ class CustomSearch {
         curl_close($ch);
 
         if($responseCode!=200){
-            throw new \RuntimeException('API did not return a valid result: '.$responseCode.' Response: '.$response);
+            throw new \RuntimeException($response->error->message);
         }
 
         return json_decode($response);

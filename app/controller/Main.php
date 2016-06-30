@@ -33,7 +33,8 @@ class Main extends Parser
 
             if($type == 'checkEmail'){
 
-                $result = $client->checkEmail($this->input->post('item'));
+                $item = json_decode($this->input->post('item'));
+                $result = $client->checkEmail($item);
                 header("Content-type: application/json; charset=utf-8");
                 header("Cache-Control: must-revalidate");
                 header("Pragma: no-cache");
@@ -52,24 +53,32 @@ class Main extends Parser
 
                 if ($result) {
 
-                    $message = '<p>Файл успешно создан</p>';
+                    //$message = '<p>Файл успешно создан</p>';
                     //$this->msg->success('Файл успешно создан.');
-                    $message = $message . $this->sendEmail($this->input->post('email'), $result);
-                    echo $message;
+                    $message = '  <i class="large material-icons circle">email</i><p class="title" style="margin-top:10px;">'. $this->sendEmail($this->input->post('email'), $result).'</p>';
+
 
                 } else {
                     //$this->msg->error('Ошибка при создании файла');
-                    $this->log->error('Ошибка при создании файла');
-                    echo 'Ошибка при создании файла';
+                    //$this->log->error('Ошибка при создании файла');
+                    $message =  '<i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Ошибка при создании файла</p>';
                 }
+
+                header("Content-type: application/json; charset=utf-8");
+                header("Cache-Control: must-revalidate");
+                header("Pragma: no-cache");
+                header("Expires: -1");
+                $json = json_encode(array('message'=>$message));
+                print $json;
                 exit();
+;
             }
 
             
 
             if (!$this->input->post('text')) {
                 $message = 'Вы не ввели данные в форму';
-                $this->msg->error('Вы не ввели данные в форму');
+                //$this->msg->error('Вы не ввели данные в форму');
             } else {
 
                 if ($this->input->post('type') == 'request') {
@@ -127,10 +136,7 @@ class Main extends Parser
                 return ' Ошибка отправки сообщения: ' . $mail->ErrorInfo;
             } else {
                 $this->msg->success('Запрос принят, ждите на почте');
-                /*echo '<pre>';
-                print_r($mail);
-                echo '</pre>';
-                exit();*/
+
                 return 'Сообщение успешно отправлено';
             }
         } catch (Exception $e) {

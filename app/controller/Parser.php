@@ -86,14 +86,21 @@ class Parser
     public function loadOutput()
     {
         $load = $this->output->load();
+        var_dump($load);
+        exit();
 
         if (!$load) {
             return false;
         }else{
             $data = new stdClass();
+            if(!is_array($load)){
+                $data->error = $load;
+                $load = array();
+            }
+
             $data->items = $load;
-            $data->end = true;
             $data->page = 1;
+
             $data->totapages = count($load);
             header("Content-type: application/json; charset=utf-8");
             header("Cache-Control: must-revalidate");
@@ -180,7 +187,6 @@ class Parser
 
         }
 
-        return false;
 
     }
 
@@ -198,7 +204,7 @@ class Parser
 
 
             //foreach ($this->contactUrl as $item) {
-            if ($this->input->post('type') == 'request') {
+            if (is_array($this->input->post('type'))) {
                 $t = $url[1];
                 $url = $url[0];
                 $url = trim($url);
@@ -215,10 +221,6 @@ class Parser
             }
 
 
-            /*echo '<pre>';
-            print_r($url);
-            echo '</pre>';
-            exit();*/
 
             $curl = new Curl();
             $curl->get(trim($url));
@@ -233,7 +235,7 @@ class Parser
                     'title' => '',
                     'email' => 'Страница не открылась или открылась с ошибкой',
                     'status' => 0,
-                    'message'=>'Error: url (' . trim($url) . ') ' . $curl->errorCode . ': ' . $curl->errorMessage
+                    'message'=>' <i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Error: url (' . trim($url) . ') Код ошибки от браузера: ' . $curl->errorCode .'</p>'
                 );
 
 
@@ -275,7 +277,7 @@ class Parser
                             'title' => $title,
                             'email' => $email,
                             'status' => 1,
-                            'message'=> 'По ссылке '.trim($url).'  email есть - '.$email
+                            'message'=> '<i class="large material-icons circle">thumb_up</i><p class="title" style="margin-top:10px;">По ссылке '.trim($url).'  email есть - '.$email.'</p>'
                         );
                         //$this->msg->info('По ссылке '.trim($url).'  email есть - '.$email);
                     }
@@ -288,7 +290,7 @@ class Parser
                         'title' => '',
                         'email' => 'Нет email',
                         'status' => 0,
-                        'message'=>'По ссылке '.trim($url) .' нет email'
+                        'message'=>'<i class="large material-icons circle">thumb_down</i><p class="title" style="margin-top:10px;">По ссылке '.trim($url) .' нет email</p>'
                     );
 
                     //$this->msg->info('По ссылке '.trim($url) .' нет email');

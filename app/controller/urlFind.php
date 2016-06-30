@@ -46,6 +46,8 @@ class urlFind implements parserInterface
         try {
             $lists = array();
 
+
+
             foreach ( $this->word as $w) {
 
                 $pageNum = 1;
@@ -57,9 +59,16 @@ class urlFind implements parserInterface
                 $response = array();
 
                 if($this->limit<=10){
-                    $response = $cs->search($w, ['num'=>$this->limit]);
-                    $response= $response->items;
+                    try {
+                        $response = $cs->search($w, ['num' => $this->limit]);
+                        $response = $response->items;
+                    }catch(Exception $e){
+                        $message = "Превышен лимит попробуйте позже";
+                        $this->log->error($message);
+                        return $message;
+                    }
                 }else {
+
                     for ($i = 1; $i <= $count; $i++) {
                         $response_temp = $cs->search($w, ['start' => $i]);
                         $response = array_merge($response, $response_temp->items);
@@ -70,14 +79,13 @@ class urlFind implements parserInterface
                 if (count($response)==0) {
                     $this->msg->error('По запросу "' . $w . '" линков в google.com нет.');
                     $this->log->error('По запросу "' . $w. '" линков в google.com нет.');
-                    return false;
+
+                    return 'По запросу "' . $w . '" линков в google.com нет.';
                 }else{
                     foreach ($response as $item){
                         $lists[] = array($item->link, $item->title);
                     }
                 }
-
-
 
                 /*if (!$page) {
                     $this->msg->error('Страница не загрузилась');
@@ -125,9 +133,7 @@ class urlFind implements parserInterface
                 }*/
 
             }
-
-
-           
+            
             return $lists;
 
 

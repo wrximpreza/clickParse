@@ -22,6 +22,13 @@
             background: #ee6e73;
             color: #fff;
         }
+        #message{
+            display: none;
+        }
+        .collection-item{
+            min-height: 60px;
+            list-style-type: none;
+        }
     </style>
 
 
@@ -41,18 +48,9 @@
             </div>
         </div>
     </div>
+<!--
     <?php if($this->msg->hasMessages()): ?>
-        <!--<div class="col s12 m8 offset-m2 l6 offset-l3">
-            <div class="card-panel grey lighten-5 z-depth-1">
-                <div class="row valign-wrapper">
-                    <div class="col s12">
-                      <span class="black-text">
 
-                      </span>
-                    </div>
-                </div>
-            </div>
-        </div>-->
         <div class="col s12 m8 offset-m2 l6 offset-l3">
             <div class="card-panel  z-depth-1 ">
                 <div class=" valign-wrapper">
@@ -65,7 +63,23 @@
             </div>
         </div>
     <?php endif; ?>
+-->
+    <div class="col s12 m8 offset-m2 l6 offset-l3" id="message">
+        <div class="card-panel  z-depth-1 ">
+            <div class="collection col s12" >
 
+            </div>
+        </div>
+    </div>
+
+<!--
+<li class="collection-item avatar" style="min-height: 60px; list-style-type: none;">
+                    <i class="large material-email circle">email</i>
+                    <p class="title" style="margin-top:10px;">Title</p>
+                </li>
+
+
+-->
     <div class="progress" id="progressbar">
         <div class="determinate" style="width: 0%"></div>
     </div>
@@ -241,10 +255,24 @@
         $("#progressbar").hide('fast');
 
         $('#request #start').on('click', function(event) {
-            event.stopPropagation();
+            $("#message .collection").html("");
+            var textarea = $("#request #textarea1").val();
+            var email = $("#request #email").val();
+            $("#message").hide();
+
+            if(textarea == '' || typeof textarea == 'undefined' ){
+                $("#message").show();
+                $("#message .collection").append('<li class="collection-item">Введите ссылки для запроса</li>');
+                return false;
+            }
+            if(email == '' || typeof email == 'undefined' ){
+                $("#message").show();
+                $("#message .collection").append('<li class="collection-item">Введите email</li>');
+                return false;
+            }
 
             $("#progressbar .determinate").css({"width": "0%"});
-
+            Piecon.setProgress(0);
             $("#progressbar").show('fast');
 
             $.ajax({
@@ -254,16 +282,23 @@
                     "type": "request",
                     "text": $("#request #textarea1").val(),
                     "email":$("#request #email").val(),
-                    "count":$("#request #count").val(),
+                    "count":$("#request #count").val()
                 },
                 dataType: 'json',
                 success: function(data){
-
-                    //do_export(1, data);
-
+                    var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
+                    var items = data.items;
+                    $("#message").show();
+                    if(data.error == '' ) {
+                        var results = [];
+                        $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
+                        do_export(items, file, 0, results);
+                    }else{
+                        $("#message .collection").append('<li class="collection-item">'+data.error+'</li>');
+                    }
                 },
                 error:function(xhr, status, errorThrown) {
-                    alert(errorThrown+'\n'+xhr.responseText);
+                    $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                 }
 
             });
@@ -275,11 +310,24 @@
 
         $('#host #start').on('click', function(event) {
             event.stopPropagation();
+            $("#message .collection").html("");
+            var textarea = $("#host #textarea").val();
+            var email = $("#host #email").val();
+            $("#message").hide();
+
+            if(textarea == '' || typeof textarea == 'undefined' ){
+                $("#message").show();
+                $("#message .collection").append('<li class="collection-item">Введите ссылки для запроса</li>');
+                return false;
+            }
+            if(email == '' || typeof email == 'undefined' ){
+                $("#message").show();
+                $("#message .collection").append('<li class="collection-item">Введите email</li>');
+                return false;
+            }
 
             $("#progressbar .determinate").css({"width": "0%"});
-
             $("#progressbar").show('fast');
-
             $.ajax({
                 url: window.location.href,
                 method:"POST",
@@ -293,11 +341,14 @@
                     var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
                     var items = data.items;
                     var results = [];
+
+                    $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
+                    $("#message").show();
                     do_export(items, file, 0, results);
 
                 },
                 error:function(xhr, status, errorThrown) {
-                    alert(errorThrown+'\n'+xhr.responseText);
+                    $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                 }
 
             });
@@ -311,64 +362,75 @@
 
             var totalpages = items.length;
 
-            $.ajax({
-                url: window.location.href,
-                method:"POST",
-                data: {
-                    "type": "checkEmail",
-                    "item": items[page],
-                    "file": file
-                },
-                dataType: 'json',
-                success: function(data){
+            try {
+                $.ajax({
+                    url: window.location.href,
+                    method: "POST",
+                    data: {
+                        "type": "checkEmail",
+                        "item": JSON.stringify(items[page]),
+                        "file": file
+                    },
+                    dataType: 'json',
+                    success: function (data) {
 
-                    if(items.length != page)
-                    {
-                        results.push(data);
-                        do_export(items, file, page+1, results);
-                        Piecon.setProgress(Math.round(100*(page+1)/totalpages));
-                        var p = 100*(page+1)/totalpages;
-                        $("#progressbar .determinate").css({"width" : p+"%"});
-                    }
-                    else
-                    {
-                        if(items.length == page)
-                        {
-                            $.ajax({
-                                url: window.location.href,
-                                method:"POST",
-                                data: {
-                                    "type": "writeEmail",
-                                    "items": JSON.stringify(results),
-                                    "file": file
-                                },
-                                dataType: 'json',
-                                success: function(data){
+                        if (typeof items[page + 1] != 'undefined') {
+                            results.push(data);
+                            $("#message .collection").append('<li class="collection-item avatar">' + data.message + '</li>');
 
-
-                                },
-                                error:function(xhr, status, errorThrown) {
-
-
-                                }
-
-
-                            });
-
-                            Piecon.setProgress(100);
-                            $("#progressbar .determinate").css({"width" : "100%"});
-
+                            do_export(items, file, page + 1, results);
+                            Piecon.setProgress(Math.round(100 * (page + 1) / totalpages));
+                            var p = 100 * (page + 1) / totalpages;
+                            $("#progressbar .determinate").css({"width": p + "%"});
                         }
+                        else {
+                            if (typeof items[page + 1] == 'undefined') {
+                                $.ajax({
+                                    url: window.location.href,
+                                    method: "POST",
+                                    data: {
+                                        "type": "writeEmail",
+                                        "items": JSON.stringify(results),
+                                        "file": file
+                                    },
+                                    dataType: 'json',
+                                    success: function (data) {
+
+                                        $("#message .collection").append('<li class="collection-item avatar">' + data.message + '</li>');
+
+                                        $("#host #textarea").val("");
+                                        $("#host #email").val("");
+                                        $("#request #textarea").val("");
+                                        $("#request #email").val("");
+                                        $("#request #count").val("");
+
+                                    },
+                                    error: function (xhr, status, errorThrown) {
+                                        $("#message .collection").append('<li class="collection-item avatar">' + xhr.responseText + '</li>');
+                                        $("#host #textarea").val("");
+                                        $("#host #email").val("");
+                                        $("#request #textarea").val("");
+                                        $("#request #email").val("");
+                                        $("#request #count").val("");
+                                    }
+                                });
+
+                                Piecon.setProgress(100);
+                                $("#progressbar .determinate").css({"width": "100%"});
+
+                            }
+                        }
+
+                    },
+                    error: function (xhr, status, errorThrown) {
+                        $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                     }
 
-                },
-                error:function(xhr, status, errorThrown) {
 
-                    return false;
-                }
+                });
+            }catch(e){
 
-
-            });
+            }
         }
 
     });
