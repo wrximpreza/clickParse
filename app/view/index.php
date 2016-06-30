@@ -6,7 +6,7 @@
     <!-- Compiled and minified CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/0.97.6/css/materialize.min.css">
     <title>Парсинг Email</title>
-
+    <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
     <!--Let browser know website is optimized for mobile-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <style>
@@ -281,7 +281,7 @@
                 data: {
                     "type": "request",
                     "text": $("#request #textarea1").val(),
-                    "email":$("#request #email").val(),
+                    "email":email,
                     "count":$("#request #count").val()
                 },
                 dataType: 'json',
@@ -289,10 +289,11 @@
                     var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
                     var items = data.items;
                     $("#message").show();
-                    if(data.error == '' ) {
+
+                    if(typeof data.error == 'undefined' ) {
                         var results = [];
                         $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
-                        do_export(items, file, 0, results);
+                        do_export(items, file, 0, results, email);
                     }else{
                         $("#message .collection").append('<li class="collection-item">'+data.error+'</li>');
                     }
@@ -334,7 +335,7 @@
                 data: {
                     "type": "host",
                     "text": $("#host #textarea").val(),
-                    "email":$("#host #email").val()
+                    "email":email
                 },
                 dataType: 'json',
                 success: function(data){
@@ -344,7 +345,7 @@
 
                     $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
                     $("#message").show();
-                    do_export(items, file, 0, results);
+                    do_export(items, file, 0, results, email);
 
                 },
                 error:function(xhr, status, errorThrown) {
@@ -357,7 +358,7 @@
         });
 
 
-        function do_export(items, file, page, results)
+        function do_export(items, file, page, results, email)
         {
 
             var totalpages = items.length;
@@ -369,16 +370,22 @@
                     data: {
                         "type": "checkEmail",
                         "item": JSON.stringify(items[page]),
-                        "file": file
+                        "file": file,
+                        "email":email
                     },
                     dataType: 'json',
                     success: function (data) {
 
                         if (typeof items[page + 1] != 'undefined') {
                             results.push(data);
-                            $("#message .collection").append('<li class="collection-item avatar">' + data.message + '</li>');
+                            try {
+                                $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(data.message) + '</li>');
+                            } catch (err) {
 
-                            do_export(items, file, page + 1, results);
+                            }
+
+
+                            do_export(items, file, page + 1, results, email);
                             Piecon.setProgress(Math.round(100 * (page + 1) / totalpages));
                             var p = 100 * (page + 1) / totalpages;
                             $("#progressbar .determinate").css({"width": p + "%"});
@@ -391,27 +398,28 @@
                                     data: {
                                         "type": "writeEmail",
                                         "items": JSON.stringify(results),
-                                        "file": file
+                                        "file": file,
+                                        "email":email
                                     },
                                     dataType: 'json',
                                     success: function (data) {
 
-                                        $("#message .collection").append('<li class="collection-item avatar">' + data.message + '</li>');
+                                        $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(data.message) + '</li>');
 
                                         $("#host #textarea").val("");
                                         $("#host #email").val("");
                                         $("#request #textarea").val("");
                                         $("#request #email").val("");
-                                        $("#request #count").val("");
+
 
                                     },
                                     error: function (xhr, status, errorThrown) {
-                                        $("#message .collection").append('<li class="collection-item avatar">' + xhr.responseText + '</li>');
+                                        $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(xhr.responseText) + '</li>');
                                         $("#host #textarea").val("");
                                         $("#host #email").val("");
                                         $("#request #textarea").val("");
                                         $("#request #email").val("");
-                                        $("#request #count").val("");
+
                                     }
                                 });
 
@@ -423,6 +431,9 @@
 
                     },
                     error: function (xhr, status, errorThrown) {
+                        console.log(xhr);
+                        console.log(status);
+                        console.log(errorThrown);
                         $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                     }
 

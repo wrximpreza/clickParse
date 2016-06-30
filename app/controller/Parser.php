@@ -86,12 +86,11 @@ class Parser
     public function loadOutput()
     {
         $load = $this->output->load();
-        var_dump($load);
-        exit();
 
         if (!$load) {
             return false;
         }else{
+
             $data = new stdClass();
             if(!is_array($load)){
                 $data->error = $load;
@@ -106,9 +105,21 @@ class Parser
             header("Cache-Control: must-revalidate");
             header("Pragma: no-cache");
             header("Expires: -1");
-            $json = json_encode($data);
-            print $json;
+
+            try {
+                $json = json_encode($data);
+                if($json){
+                    print $json;
+                }else{
+                    $this->validateJson(json_last_error());
+                }
+
+            }catch (Exception $e){
+                echo $e->getMessage();
+            }
+
             exit();
+
         }
         /*$this->lists = $this->checkEmail($load);
         return $this->createExcel($this->lists);*/
@@ -151,12 +162,12 @@ class Parser
                 $sheet->setCellValueByColumnAndRow(
                     0,
                     $i,
-                    $item->url
+                    urldecode($item->url)
                 );
                 $sheet->setCellValueByColumnAndRow(
                     1,
                     $i,
-                    $item->title
+                    urldecode($item->title)
                 );
                 $sheet->setCellValueByColumnAndRow(
                     2,
@@ -202,7 +213,7 @@ class Parser
 
         //foreach ($urls as $url) {
 
-
+             $url = urldecode($url);
             //foreach ($this->contactUrl as $item) {
             if (is_array($this->input->post('type'))) {
                 $t = $url[1];
@@ -231,11 +242,11 @@ class Parser
 
                 $this->log->error('Error: url (' . trim($url) . ') ' . $curl->errorCode . ': ' . $curl->errorMessage);
                 $results = array(
-                    'url' => $url,
+                    'url' => urlencode($url),
                     'title' => '',
                     'email' => 'Страница не открылась или открылась с ошибкой',
                     'status' => 0,
-                    'message'=>' <i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Error: url (' . trim($url) . ') Код ошибки от браузера: ' . $curl->errorCode .'</p>'
+                    'message'=>' <i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Error: url (' . urlencode(trim($url)) . ') Код ошибки от браузера: ' . $curl->errorCode .'</p>'
                 );
 
 
@@ -259,25 +270,25 @@ class Parser
 
                 if (count($emails) > 0) {
                     foreach ($emails as $email) {
-                        if ($this->input->post('type') == 'request') {
+                        /*if ($this->input->post('type') == 'request') {
                             $title = $t;
-                        } else {
-                            if (isset($contentType[1])) {
-                                if ($contentType[1] == 'UTF-8' || $contentType[1] == '')
-                                    $title = PhpMailExtractor::pageTitle($curl->response);
-                                else
-                                    $title = iconv($contentType[1], 'UTF-8', PhpMailExtractor::pageTitle($curl->response));
-                            } else {
+                        } else {*/
+                        if (isset($contentType[1])) {
+                            if ($contentType[1] == 'UTF-8' || $contentType[1] == '')
                                 $title = PhpMailExtractor::pageTitle($curl->response);
-                            }
-
+                            else
+                                $title = iconv($contentType[1], 'UTF-8', PhpMailExtractor::pageTitle($curl->response));
+                        } else {
+                            $title = PhpMailExtractor::pageTitle($curl->response);
                         }
+
+                        //}
                         $results = array(
-                            'url' => $url,
-                            'title' => $title,
+                            'url' => urlencode($url),
+                            'title' => urlencode($title),
                             'email' => $email,
                             'status' => 1,
-                            'message'=> '<i class="large material-icons circle">thumb_up</i><p class="title" style="margin-top:10px;">По ссылке '.trim($url).'  email есть - '.$email.'</p>'
+                            'message'=> '<i class="large material-icons circle">thumb_up</i><p class="title" style="margin-top:10px;">По ссылке '.urlencode(trim($url)).'  email есть - '.$email.'</p>'
                         );
                         //$this->msg->info('По ссылке '.trim($url).'  email есть - '.$email);
                     }
@@ -286,11 +297,11 @@ class Parser
                 } else {
 
                     $results = array(
-                        'url' => $url,
+                        'url' => urlencode($url),
                         'title' => '',
                         'email' => 'Нет email',
                         'status' => 0,
-                        'message'=>'<i class="large material-icons circle">thumb_down</i><p class="title" style="margin-top:10px;">По ссылке '.trim($url) .' нет email</p>'
+                        'message'=>'<i class="large material-icons circle">thumb_down</i><p class="title" style="margin-top:10px;">По ссылке '.urlencode(trim($url)) .' нет email</p>'
                     );
 
                     //$this->msg->info('По ссылке '.trim($url) .' нет email');
@@ -387,5 +398,31 @@ class Parser
         return false;
     }
 
+    public function validateJson($status){
 
+        switch ($status) {
+            case JSON_ERROR_NONE:
+                echo ' - No errors';
+                break;
+            case JSON_ERROR_DEPTH:
+                echo ' - Maximum stack depth exceeded';
+                break;
+            case JSON_ERROR_STATE_MISMATCH:
+                echo ' - Underflow or the modes mismatch';
+                break;
+            case JSON_ERROR_CTRL_CHAR:
+                echo ' - Unexpected control character found';
+                break;
+            case JSON_ERROR_SYNTAX:
+                echo ' - Syntax error, malformed JSON';
+                break;
+            case JSON_ERROR_UTF8:
+                echo ' - Malformed UTF-8 characters, possibly incorrectly encoded';
+                break;
+            default:
+                echo ' - Unknown error';
+                break;
+        }
+
+    }
 }

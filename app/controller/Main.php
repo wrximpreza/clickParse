@@ -28,6 +28,8 @@ class Main extends Parser
 
         $client = new Parser();
 
+
+
         if ($this->input->post('type')) {
             $type = $this->input->post('type');
 
@@ -40,7 +42,12 @@ class Main extends Parser
                 header("Pragma: no-cache");
                 header("Expires: -1");
                 $json = json_encode($result);
-                print $json;
+                if($json){
+                    print $json;
+                }else{
+                    var_dump($result);
+                    $client->validateJson(json_last_error());
+                }
                 exit();
 
             }
@@ -69,7 +76,12 @@ class Main extends Parser
                 header("Pragma: no-cache");
                 header("Expires: -1");
                 $json = json_encode(array('message'=>$message));
-                print $json;
+                if($json){
+                    print $json;
+                }else{
+                    $client->validateJson(json_last_error());
+                }
+
                 exit();
 ;
             }
@@ -131,17 +143,17 @@ class Main extends Parser
 
             if (!$mail->send()) {
                 $this->log->error(' Ошибка отправки сообщения: ' . $mail->ErrorInfo);
-                $this->msg->error(' Ошибка отправки сообщения: ' . $mail->ErrorInfo);
+                //$this->msg->error(' Ошибка отправки сообщения: ' . $mail->ErrorInfo);
 
                 return ' Ошибка отправки сообщения: ' . $mail->ErrorInfo;
             } else {
-                $this->msg->success('Запрос принят, ждите на почте');
+                //$this->msg->success('Запрос принят, ждите на почте');
 
                 return 'Сообщение успешно отправлено';
             }
         } catch (Exception $e) {
             $this->log->error('Message: '. $e->getMessage(). ', File: '. $e->getFile(). ', Line: '.$e->getLine());
-            $this->msg->error(' Ошибка отправки сообщения: ' . $e->getMessage());
+            //$this->msg->error(' Ошибка отправки сообщения: ' . $e->getMessage());
 
             return ' Ошибка отправки сообщения: ' . $e->getMessage();
         }
