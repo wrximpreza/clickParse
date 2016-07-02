@@ -30,17 +30,30 @@ class Parser
      * @var
      */
     public $log;
-    public $msg;
+
     /**
-     * @var array can by contact page
+     * @var \Plasticbrain\FlashMessages\FlashMessages
      */
-    /*public $contactUrl = array(
-        '',
-        '/contacts',
-        '/contact',
-        '/feedback',
-        '/contact.html'
-    );*/
+    public $msg;
+
+    /**
+     * @var string
+     */
+    public $file = 'file/search_at_this_moment.db';
+
+    /**
+     * @var SQLite3 database
+     */
+    public $db;
+
+    /**
+     * @var User identification
+     */
+    public $user_id;
+
+    /**
+     * @var array
+     */
     public $inTetxContactUrl = array(
         'contacts',
         'contact',
@@ -69,6 +82,14 @@ class Parser
 
         $this->msg->setMsgWrapper("<p class='%s'>%s</p>");
         $this->msg->setCloseBtn('');
+
+
+        $this->user_id = $_SESSION['user_id'];
+
+
+        $this->db = new SQLite3($this->file);
+        $this->db->exec('CREATE TABLE IF NOT EXISTS email (user_id VARCHAR(255), time VARCHAR(255), type VARCHAR(255), email VARCHAR(255), message VARCHAR(255))');
+
 
     }
 
@@ -105,7 +126,6 @@ class Parser
             header("Cache-Control: must-revalidate");
             header("Pragma: no-cache");
             header("Expires: -1");
-
             try {
                 $json = json_encode($data);
                 if($json){
@@ -117,7 +137,6 @@ class Parser
             }catch (Exception $e){
                 echo $e->getMessage();
             }
-
             exit();
 
         }
@@ -249,6 +268,14 @@ class Parser
                     'message'=>' <i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Error: url (' . urlencode(trim($url)) . ') Код ошибки от браузера: ' . $curl->errorCode .'</p>'
                 );
 
+                $dataToFile = array(
+                    time(),
+                    $this->input->post("typeMethod"),
+                    urlencode($url),
+                    'Страница не открылась или открылась с ошибкой',
+                );
+                $this->writeToFile($dataToFile);
+
 
                 //$this->msg->info('По ссылке '.trim($url) .' нет email.');
             } else {
@@ -283,6 +310,7 @@ class Parser
                         }
 
                         //}
+
                         $results = array(
                             'url' => urlencode($url),
                             'title' => urlencode($title),
@@ -290,6 +318,25 @@ class Parser
                             'status' => 1,
                             'message'=> '<i class="large material-icons circle">thumb_up</i><p class="title" style="margin-top:10px;">По ссылке '.urlencode(trim($url)).'  email есть - '.$email.'</p>'
                         );
+
+
+                        /*fclose(fopen($this->file, 'a+b'));
+                        $f = fopen($this->file, 'r+b');
+                        flock($f, LOCK_EX);
+                        fwrite($f, json_encode($dataToFile));*/
+
+
+                        $dataToFile = array(
+                            time(),
+                            $this->input->post("typeMethod"),
+                            urlencode($url),
+                            $email,
+                        );
+                        $this->writeToFile($dataToFile);
+
+
+                        //fclose($this->file);
+
                         //$this->msg->info('По ссылке '.trim($url).'  email есть - '.$email);
                     }
                     $status = 1;
@@ -303,6 +350,14 @@ class Parser
                         'status' => 0,
                         'message'=>'<i class="large material-icons circle">thumb_down</i><p class="title" style="margin-top:10px;">По ссылке '.urlencode(trim($url)) .' нет email</p>'
                     );
+
+                    $dataToFile = array(
+                        time(),
+                        $this->input->post("typeMethod"),
+                        urlencode($url),
+                        'Нет email',
+                    );
+                    $this->writeToFile($dataToFile);
 
                     //$this->msg->info('По ссылке '.trim($url) .' нет email');
                 }
@@ -319,6 +374,11 @@ class Parser
 
     }
 
+    /**
+     * @param $response
+     * @param $url
+     * @return array|bool
+     */
     private function findPosibleLinks($response, $url)
     {
 
@@ -398,6 +458,9 @@ class Parser
         return false;
     }
 
+    /**
+     * @param $status
+     */
     public function validateJson($status){
 
         switch ($status) {
@@ -425,4 +488,16 @@ class Parser
         }
 
     }
+
+    /**
+     * @param $dataToFile
+     */
+    protected function writeToFile($dataToFile)
+    {
+        //file_put_contents($this->file, serialize($dataToFile) . PHP_EOL, FILE_APPEND | LOCK_EX);
+
+        $this->db->exec("INSERT INTO email (user_id, time, type, email, message) VALUES ('".$this->user_id."','".$dataToFile[0]."', '".$dataToFile[1]."','".$dataToFile[2]."','".$dataToFile[3]."')");
+
+    }
+    
 }

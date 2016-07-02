@@ -30,7 +30,6 @@ class fileFind implements parserInterface
             if($item!='')
                 $urls[] = $item;
         }
-       
         return $urls;
     }
 

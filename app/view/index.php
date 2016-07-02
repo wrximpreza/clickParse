@@ -22,15 +22,16 @@
             background: #ee6e73;
             color: #fff;
         }
-        #message{
+
+        #message {
             display: none;
         }
-        .collection-item{
+
+        .collection-item {
             min-height: 60px;
             list-style-type: none;
         }
     </style>
-
 
 
 </head>
@@ -42,44 +43,28 @@
     <div class="row">
         <div class="col s12">
             <div class="card-panel teal">
-          <span class="white-text">
-              Описание
-          </span>
+                <span class="white-text">
+                     Описание
+                </span>
+                <a style="position: relative; top: -8px;"
+                   id="button_work"
+                   class="waves-effect waves-light btn right orange darken-4 ">
+                    В работе
+                </a>
             </div>
         </div>
     </div>
-<!--
-    <?php if($this->msg->hasMessages()): ?>
 
-        <div class="col s12 m8 offset-m2 l6 offset-l3">
-            <div class="card-panel  z-depth-1 ">
-                <div class=" valign-wrapper">
-                    <div class="col s12">
-                  <span class="black-text ">
-                     <?php echo $this->msg->display();?>
-                  </span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    <?php endif; ?>
--->
+
     <div class="col s12 m8 offset-m2 l6 offset-l3" id="message">
         <div class="card-panel  z-depth-1 ">
-            <div class="collection col s12" >
+            <div class="collection col s12">
 
             </div>
         </div>
     </div>
 
-<!--
-<li class="collection-item avatar" style="min-height: 60px; list-style-type: none;">
-                    <i class="large material-email circle">email</i>
-                    <p class="title" style="margin-top:10px;">Title</p>
-                </li>
 
-
--->
     <div class="progress" id="progressbar">
         <div class="determinate" style="width: 0%"></div>
     </div>
@@ -91,7 +76,7 @@
                 <li class="tab col s3"><a href="#request">По запросам</a></li>
             </ul>
         </div>
-        <div  class="col s12">
+        <div class="col s12">
             <div class="row">
                 <div class="col s12">
                     <div class="card-panel red">
@@ -112,15 +97,16 @@
                         <div class="input-field col s6">
                             <div class="row">
                                 <div class="col s12">
-                                    <input id="email" type="email" name="email"  required class="validate">
-                                    <label for="email" data-error="Ошиюка"  data-success="Все верно">Введите имейл для
+                                    <input id="email" type="email" name="email" required class="validate">
+                                    <label for="email" data-error="Ошиюка" data-success="Все верно">Введите имейл для
                                         получения отчета</label>
                                 </div>
                             </div>
                             <div class="row">
 
                                 <div class="col s12">
-                                    <button id="start"   style="float:right;" class="btn waves-effect waves-light" type="button"
+                                    <button id="start" style="float:right;" class="btn waves-effect waves-light"
+                                            type="button"
                                             name="action">Старт
                                         <i class="material-icons right">send</i>
                                     </button>
@@ -154,7 +140,7 @@
                             </div>
                             <div class="row">
                                 <div class="input-field col s12">
-                                    <input id="count" value="10" name="count" type="text"  required class="validate">
+                                    <input id="count" value="10" name="count" type="text" required class="validate">
                                     <label for="count">Сколько сайтов парсить? (от 1 до 999)</label>
                                 </div>
                             </div>
@@ -162,7 +148,8 @@
 
 
                                 <div class="col s12">
-                                    <button id="start"  style="float:right;" class="btn waves-effect waves-light" type="button"
+                                    <button id="start" style="float:right;" class="btn waves-effect waves-light"
+                                            type="button"
                                             name="action">Старт
                                         <i class="material-icons right">send</i>
                                     </button>
@@ -177,52 +164,76 @@
         </div>
     </div>
 
-    <?php if(isset($lists)): ?>
-
-    <div class="row">
+    <div class="row hide" id="in_work">
         <div class="col s12">
-            <div class="progress">
-                <div class="determinate" style="width: 100%"></div>
-            </div>
-        </div>
-        <div class="col s12">
-
-
+            <h2>Процессы в работе</h2>
             <table class="centered">
                 <thead>
                 <tr>
-                    <th data-field="id">ID</th>
-                    <th data-field="url">URL</th>
-                    <th data-field="name">TITLE</th>
-                    <th data-field="price">EMAIL</th>
-                    <th data-field="price">STATUS</th>
+                    <th data-field="id">#</th>
+                    <th data-field="url">Type</th>
+                    <th data-field="name">Первый Domain/Request</th>
+                    <th data-field="price">E-mail менеджера</th>
                 </tr>
                 </thead>
+                <tbody id="add_td">
 
-                <tbody>
-                <?php foreach($lists as $k=>$list): ?>
+
+                </tbody>
+            </table>
+
+        </div>
+
+    </div>
+
+    <?php if (isset($lists)): ?>
+
+        <div class="row">
+            <div class="col s12">
+                <div class="progress">
+                    <div class="determinate" style="width: 100%"></div>
+                </div>
+            </div>
+            <div class="col s12">
+
+
+                <table class="centered">
+                    <thead>
+                    <tr>
+                        <th data-field="id">ID</th>
+                        <th data-field="url">URL</th>
+                        <th data-field="name">TITLE</th>
+                        <th data-field="price">EMAIL</th>
+                        <th data-field="price">STATUS</th>
+                    </tr>
+                    </thead>
+
+                    <tbody>
+                    <?php foreach ($lists as $k => $list): ?>
                         <tr <?php
-                    if($list['status'] == 0){ echo 'style="background: red;
-    color: #fff;"'; }?>>
-                            <td><?php echo $k+1; ?></td>
+                        if ($list['status'] == 0) {
+                            echo 'style="background: red;
+    color: #fff;"';
+                        } ?>>
+                            <td><?php echo $k + 1; ?></td>
                             <td><?php echo $list['url']; ?></td>
                             <td><?php echo $list['title']; ?></td>
                             <td><?php echo $list['email']; ?></td>
                             <td><?php
-                                if($list['status'] == 0)
+                                if ($list['status'] == 0)
                                     echo 'Нет email';
                                 else
                                     echo 'Есть';
                                 ?></td>
                         </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
 
+
+            </div>
 
         </div>
-
-    </div>
     <?php endif; ?>
 
 </div>
@@ -249,23 +260,62 @@
 <script>
 
     var in_process = false;
+    var time = <?php echo time(); ?>;
 
-    $(function() {
+    $(function () {
 
         $("#progressbar").hide('fast');
 
-        $('#request #start').on('click', function(event) {
+        $('#button_work').on('click', function (event) {
+            $("#in_work").removeClass('hide');
+            $('html,body').animate({
+                    scrollTop: $("#in_work").offset().top},
+                'slow');
+            $.ajax({
+                url: window.location.href,
+                method: "GET",
+                data: {
+                    "type": "in_work",
+                    "time": time
+                },
+                dataType: 'json',
+                success: function (json) {
+                    $.each(json, function(arrayID,group) {
+                        var n = parseInt($('#add_td tr').last().find('td').first().text());
+                        if(isNaN(n)){
+                            n = 0;
+                        }
+                        var html = '<tr>';
+                        html += '<td>'+(n+1)+'</td>';
+                        html += '<td>'+group[2]+'</td>';
+                        html += '<td>'+decodeURIComponent(group[3])+'</td>';
+                        html += '<td>'+group[4]+'</td>';
+                        html += '</tr>';
+                        $('#add_td').append(html);
+
+                    });
+                },
+                error: function (xhr, status, errorThrown) {
+
+                }
+
+            });
+
+        });
+
+
+        $('#request #start').on('click', function (event) {
             $("#message .collection").html("");
             var textarea = $("#request #textarea1").val();
             var email = $("#request #email").val();
             $("#message").hide();
 
-            if(textarea == '' || typeof textarea == 'undefined' ){
+            if (textarea == '' || typeof textarea == 'undefined') {
                 $("#message").show();
                 $("#message .collection").append('<li class="collection-item">Введите ссылки для запроса</li>');
                 return false;
             }
-            if(email == '' || typeof email == 'undefined' ){
+            if (email == '' || typeof email == 'undefined') {
                 $("#message").show();
                 $("#message .collection").append('<li class="collection-item">Введите email</li>');
                 return false;
@@ -277,28 +327,28 @@
 
             $.ajax({
                 url: window.location.href,
-                method:"POST",
+                method: "POST",
                 data: {
                     "type": "request",
                     "text": $("#request #textarea1").val(),
-                    "email":email,
-                    "count":$("#request #count").val()
+                    "email": email,
+                    "count": $("#request #count").val()
                 },
                 dataType: 'json',
-                success: function(data){
+                success: function (data) {
                     var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
                     var items = data.items;
                     $("#message").show();
 
-                    if(typeof data.error == 'undefined' ) {
+                    if (typeof data.error == 'undefined') {
                         var results = [];
                         $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
-                        do_export(items, file, 0, results, email);
-                    }else{
-                        $("#message .collection").append('<li class="collection-item">'+data.error+'</li>');
+                        do_export({"items":items, "file":file, "page":0, "results":results, "email":email, "typeMethod":"request"});
+                    } else {
+                        $("#message .collection").append('<li class="collection-item">' + data.error + '</li>');
                     }
                 },
-                error:function(xhr, status, errorThrown) {
+                error: function (xhr, status, errorThrown) {
                     $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                 }
 
@@ -309,19 +359,19 @@
         });
 
 
-        $('#host #start').on('click', function(event) {
+        $('#host #start').on('click', function (event) {
             event.stopPropagation();
             $("#message .collection").html("");
             var textarea = $("#host #textarea").val();
             var email = $("#host #email").val();
             $("#message").hide();
 
-            if(textarea == '' || typeof textarea == 'undefined' ){
+            if (textarea == '' || typeof textarea == 'undefined') {
                 $("#message").show();
                 $("#message .collection").append('<li class="collection-item">Введите ссылки для запроса</li>');
                 return false;
             }
-            if(email == '' || typeof email == 'undefined' ){
+            if (email == '' || typeof email == 'undefined') {
                 $("#message").show();
                 $("#message .collection").append('<li class="collection-item">Введите email</li>');
                 return false;
@@ -331,24 +381,24 @@
             $("#progressbar").show('fast');
             $.ajax({
                 url: window.location.href,
-                method:"POST",
+                method: "POST",
                 data: {
                     "type": "host",
                     "text": $("#host #textarea").val(),
-                    "email":email
+                    "email": email
                 },
                 dataType: 'json',
-                success: function(data){
+                success: function (data) {
                     var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
                     var items = data.items;
                     var results = [];
 
                     $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
                     $("#message").show();
-                    do_export(items, file, 0, results, email);
+                    do_export({"items":items, "file":file, "page":0, "results":results, "email":email, "typeMethod":"host"});
 
                 },
-                error:function(xhr, status, errorThrown) {
+                error: function (xhr, status, errorThrown) {
                     $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                 }
 
@@ -358,10 +408,9 @@
         });
 
 
-        function do_export(items, file, page, results, email)
-        {
+        function do_export(inputData) {
 
-            var totalpages = items.length;
+            var totalpages = inputData.items.length;
 
             try {
                 $.ajax({
@@ -369,15 +418,16 @@
                     method: "POST",
                     data: {
                         "type": "checkEmail",
-                        "item": JSON.stringify(items[page]),
-                        "file": file,
-                        "email":email
+                        "item": JSON.stringify(inputData.items[inputData.page]),
+                        "file": inputData.file,
+                        "email": inputData.email,
+                        "typeMethod": inputData.typeMethod
                     },
                     dataType: 'json',
                     success: function (data) {
 
-                        if (typeof items[page + 1] != 'undefined') {
-                            results.push(data);
+                        if (typeof inputData.items[inputData.page + 1] != 'undefined') {
+                            inputData.results.push(data);
                             try {
                                 $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(data.message) + '</li>');
                             } catch (err) {
@@ -385,21 +435,21 @@
                             }
 
 
-                            do_export(items, file, page + 1, results, email);
-                            Piecon.setProgress(Math.round(100 * (page + 1) / totalpages));
-                            var p = 100 * (page + 1) / totalpages;
+                            do_export([inputData.items, inputData.file, inputData.page + 1, inputData.results, inputData.email]);
+                            Piecon.setProgress(Math.round(100 * (inputData.page + 1) / totalpages));
+                            var p = 100 * (inputData.page + 1) / totalpages;
                             $("#progressbar .determinate").css({"width": p + "%"});
                         }
                         else {
-                            if (typeof items[page + 1] == 'undefined') {
+                            if (typeof inputData.items[inputData.page + 1] == 'undefined') {
                                 $.ajax({
                                     url: window.location.href,
                                     method: "POST",
                                     data: {
                                         "type": "writeEmail",
-                                        "items": JSON.stringify(results),
-                                        "file": file,
-                                        "email":email
+                                        "items": JSON.stringify(inputData.results),
+                                        "file": inputData.file,
+                                        "email": inputData.email
                                     },
                                     dataType: 'json',
                                     success: function (data) {
@@ -436,10 +486,8 @@
                         console.log(errorThrown);
                         $("#message .collection").append('<li class="collection-item">Ошибка запроса</li>');
                     }
-
-
                 });
-            }catch(e){
+            } catch (e) {
 
             }
         }
