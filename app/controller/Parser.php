@@ -83,7 +83,7 @@ class Parser
         $this->msg->setMsgWrapper("<p class='%s'>%s</p>");
         $this->msg->setCloseBtn('');
 
-
+        
         $this->user_id = $_SESSION['user_id'];
 
 
@@ -495,8 +495,18 @@ class Parser
     protected function writeToFile($dataToFile)
     {
         //file_put_contents($this->file, serialize($dataToFile) . PHP_EOL, FILE_APPEND | LOCK_EX);
+        if(!$this->user_id){
+            $this->user_id = 0;
+        }
+        
 
-        $this->db->exec("INSERT INTO email (user_id, time, type, email, message) VALUES ('".$this->user_id."','".$dataToFile[0]."', '".$dataToFile[1]."','".$dataToFile[2]."','".$dataToFile[3]."')");
+        $this->db->exec("INSERT INTO email (`user_id`, `time`, `type`, `email`, `message`) VALUES ('".$this->user_id."','".time()."', '".$dataToFile[1]."','".$dataToFile[2]."','".$dataToFile[3]."')");
+        if($this->db->lastErrorMsg()!='not an error'){
+            echo $this->db->lastErrorMsg();
+            exit();
+        }
+
+
 
     }
     

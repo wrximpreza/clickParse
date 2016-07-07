@@ -174,6 +174,7 @@
                     <th data-field="url">Type</th>
                     <th data-field="name">Первый Domain/Request</th>
                     <th data-field="price">E-mail менеджера</th>
+                    <th data-field="id">Time</th>
                 </tr>
                 </thead>
                 <tbody id="add_td">
@@ -262,44 +263,51 @@
     var in_process = false;
     var time = <?php echo time(); ?>;
 
+    function updateTable(){
+        $.ajax({
+            url: window.location.href,
+            method: "GET",
+            data: {
+                "type": "in_work",
+                "time": time
+            },
+            dataType: 'html',
+            success: function (html) {
+                console.log(html);
+                /*$.each(json, function(arrayID,group) {
+                    var n = parseInt($('#add_td tr').last().find('td').first().text());
+                    if(isNaN(n)){
+                        n = 0;
+                    }
+                    var html = '<tr>';
+                    html += '<td>'+(n+1)+'</td>';
+                    html += '<td>'+group[2]+'</td>';
+                    html += '<td>'+decodeURIComponent(group[3])+'</td>';
+                    html += '<td>'+group[4]+'</td>';
+                    html += '</tr>';
+                    
+
+                });*/
+                $('#add_td').html(html);
+            },
+            error: function (xhr, status, errorThrown) {
+
+            }
+
+        });
+    }
     $(function () {
 
         $("#progressbar").hide('fast');
+
 
         $('#button_work').on('click', function (event) {
             $("#in_work").removeClass('hide');
             $('html,body').animate({
                     scrollTop: $("#in_work").offset().top},
                 'slow');
-            $.ajax({
-                url: window.location.href,
-                method: "GET",
-                data: {
-                    "type": "in_work",
-                    "time": time
-                },
-                dataType: 'json',
-                success: function (json) {
-                    $.each(json, function(arrayID,group) {
-                        var n = parseInt($('#add_td tr').last().find('td').first().text());
-                        if(isNaN(n)){
-                            n = 0;
-                        }
-                        var html = '<tr>';
-                        html += '<td>'+(n+1)+'</td>';
-                        html += '<td>'+group[2]+'</td>';
-                        html += '<td>'+decodeURIComponent(group[3])+'</td>';
-                        html += '<td>'+group[4]+'</td>';
-                        html += '</tr>';
-                        $('#add_td').append(html);
+            setInterval(updateTable, 1000);
 
-                    });
-                },
-                error: function (xhr, status, errorThrown) {
-
-                }
-
-            });
 
         });
 
@@ -434,8 +442,9 @@
 
                             }
 
+                            inputData.page = inputData.page+1;
 
-                            do_export([inputData.items, inputData.file, inputData.page + 1, inputData.results, inputData.email]);
+                            do_export(inputData);
                             Piecon.setProgress(Math.round(100 * (inputData.page + 1) / totalpages));
                             var p = 100 * (inputData.page + 1) / totalpages;
                             $("#progressbar .determinate").css({"width": p + "%"});

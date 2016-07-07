@@ -31,27 +31,37 @@ class Main extends Parser
     {
 
         $time = $this->input->get('time');
+        
 
-        $results = $this->db->query('SELECT * FROM email WHERE time >="' . $time . '" AND user_id!="' . $this->user_id . '" ');
+        //AND user_id!="' . $this->user_id . '"    
+        // WHERE time >="' . $time . '"
+        //
+        $count = $this->db->query('SELECT count(*)  FROM email WHERE time >="' . $time . '"');
+        $count = $count->fetchArray(SQLITE3_NUM);
+        $counR = $count[0];
+
+        $results = $this->db->query('SELECT *  FROM email WHERE time >="' . $time . '"  ORDER BY time ASC');
         $data = array();
-
+        $html = '';
+        $n = 0;
         while ($row = $results->fetchArray(SQLITE3_NUM)) {
-            if ($row[0] != '') {
-                $data[] = $row;
-            }
+        
+            //if ($row[0] != '') {
+                //$data[] = $row;
+                if($row[1]){
+                    $html .= '<tr>';
+                    $html .= '<td>'.($counR-$n).'</td>';
+                    $html .= '<td>'.$row[2].'</td>';
+                    $html .= '<td>'.urldecode($row[3]).'</td>';
+                    $html .= '<td>'.$row[4].'</td>';
+                    $html .= '<td>'.date('d.m.Y H:i:s', $row[1]).'</td>';
+                    $html .= '</tr>';
+                    $n++;
+                }
+            //}
 
         }
-
-        header("Content-type: application/json; charset=utf-8");
-        header("Cache-Control: must-revalidate");
-        header("Pragma: no-cache");
-        header("Expires: -1");
-        $json = json_encode($data);
-        if ($json) {
-            print $json;
-        } else {
-            $this->validateJson(json_last_error());
-        }
+        echo $html;
         exit();
 
         //$this->db->exec('DELETE FROM email');

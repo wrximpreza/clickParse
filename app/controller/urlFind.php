@@ -22,6 +22,7 @@ class urlFind implements parserInterface
 
     public $countShow;
 
+        private $ip = '62.210.79.169';
     /**
      * urlFind constructor.
      * @param FlashMessages messages
@@ -78,27 +79,44 @@ class urlFind implements parserInterface
                 }else{
                     $count = 1;
                 }
+                $file = file_get_contents('https://yandex.ru/search/xml?user=clickkyfamily&key=03.399149303:3ac49a0d823c759c75cb07002b162b1e&query=php&lr=187&l10n=ru&sortby=tm.order%3Dascending&filter=strict&groupby=attr%3D%22%22.mode%3Dflat.groups-on-page%3D10.docs-in-group%3D1');
+                //$file = file_get_contents('https://yandex.ru/search/xml?action=limits-info&user=clickkyfamily&key=03.399149303:3ac49a0d823c759c75cb07002b162b1e');
+                //echo new SimpleXMLElement($file);
+                echo $file;
+                exit();
 
                 for ($pageNum = 0; $pageNum < $count; $pageNum++) {
 
-                    $url = 'http://www.google.ru/search?q=' . urlencode($w) . '&num=' . $this->countShow . '&hl=ru&start=' . $pageNum . '&ie=UTF-8';
+                    $url = 'http://www.google.com.ua/search?q=' . urlencode($w) . '&num=' . $this->countShow . '&hl=ru&start=' . $pageNum . '&ie=UTF-8';
+                    
+                    $curl = new Curl();
 
+                    //$curl->setOpt(CURLOPT_HTTPPROXYTUNNEL, 1);
+                    //$curl->setOpt(CURLOPT_PROXY, '80.252.240.4:8080');
+                    //$curl->setOpt(CURLOPT_PROXYUSERPWD, 'username:password');
 
-                    $page = file_get_contents($url);
+                    $curl->get(trim($url));
+                    $page = $curl->response;
 
-                    if (!strpos($http_response_header[0], "200")) {
+                    //$page = file_get_contents($url);
+
+                    if ($curl->response != '' && $curl->errorCode !== 200) {
+                        return 'Ошибка при поиске в Google. ' . $curl->errorMessage;
+                    }
+                
+                    /*if (!strpos($http_response_header[0], "200")) {
                         //$this->msg->error('Страница вернула код '.$http_response_header[0]);
                         $this->log->error('Страница вернула код ' . $http_response_header[0]);
                         return 'Страница вернула код ' . $http_response_header[0];
-                    }
+                    }*/
 
-                    if (!$page)
-                        $page = curlgoogle($url);
+                    /*if (!$page)
+                        $page = curlgoogle($url);*/
 
-                    if (!$page) {
+                    if (!$curl->response) {
                         //$this->msg->error('Страница не загрузилась');
                         $this->log->error('Страница не загрузилась');
-                        //return 'Страница не загрузилась';
+                        return 'Страница не загрузилась';
                     } else {
 
                         if (preg_match_all('#<cite>(.+?)</cite>#si', $page, $match)) {
