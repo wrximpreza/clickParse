@@ -128,7 +128,7 @@
                     <div class="row">
                         <div class="input-field col s6">
                             <textarea id="textarea1" name="text" required class="materialize-textarea"></textarea>
-                            <label for="textarea1">Введите запросы</label>
+                            <label for="textarea1">Введите запросы (максимум 5 запросов за 1 раз)</label>
                         </div>
                         <div class="col s6">
                             <div class="row">
@@ -141,7 +141,7 @@
                             <div class="row">
                                 <div class="input-field col s12">
                                     <input id="count" value="10" name="count" type="text" required class="validate">
-                                    <label for="count">Сколько сайтов парсить? (от 1 до 999)</label>
+                                    <label for="count">Сколько сайтов парсить? (от 1 до 100)</label>
                                 </div>
                             </div>
                             <div class="row">
@@ -273,7 +273,7 @@
             },
             dataType: 'html',
             success: function (html) {
-                console.log(html);
+
                 /*$.each(json, function(arrayID,group) {
                     var n = parseInt($('#add_td tr').last().find('td').first().text());
                     if(isNaN(n)){
@@ -344,6 +344,7 @@
                 },
                 dataType: 'json',
                 success: function (data) {
+
                     var file = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
                     var items = data.items;
                     $("#message").show();
@@ -401,8 +402,11 @@
                     var items = data.items;
                     var results = [];
 
+
                     $("#message .collection").append('<li class="collection-item">Обработка запроса...</li>');
                     $("#message").show();
+
+
                     do_export({"items":items, "file":file, "page":0, "results":results, "email":email, "typeMethod":"host"});
 
                 },
@@ -434,10 +438,20 @@
                     dataType: 'json',
                     success: function (data) {
 
-                        if (typeof inputData.items[inputData.page + 1] != 'undefined') {
-                            inputData.results.push(data);
+                        if (typeof inputData.items[inputData.page] != 'undefined') {
+
                             try {
-                                $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(data.message) + '</li>');
+
+                                if(typeof data.status == 'undefined') {
+                                    for (var i = 0; i < data.length; i++) {
+                                        inputData.results.push(data[i]);
+                                        $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(data[i].message) + '</li>');
+                                    }
+                                }else{
+                                    inputData.results.push(data);
+                                    $("#message .collection").append('<li class="collection-item avatar">' + decodeURIComponent(data.message) + '</li>');
+                                }
+
                             } catch (err) {
 
                             }
@@ -450,7 +464,7 @@
                             $("#progressbar .determinate").css({"width": p + "%"});
                         }
                         else {
-                            if (typeof inputData.items[inputData.page + 1] == 'undefined') {
+                            if (typeof inputData.items[inputData.page] == 'undefined') {
                                 $.ajax({
                                     url: window.location.href,
                                     method: "POST",

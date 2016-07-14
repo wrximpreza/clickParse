@@ -81,6 +81,7 @@ class Main extends Parser
             if ($type == 'checkEmail') {
 
                 $item = json_decode($this->input->post('item'));
+
                 $result = $this->checkEmail($item);
                 header("Content-type: application/json; charset=utf-8");
                 header("Cache-Control: must-revalidate");
@@ -148,6 +149,36 @@ class Main extends Parser
 
     }
 
+    public function cron(){
+
+        $tasks = $this->db->query('SELECT *  FROM needSend WHERE status = 0');
+        while ($row = $tasks->fetchArray(SQLITE3_NUM)) {
+
+            $text = implode(PHP_EOL, unserialize($row[1]));
+            $email = $row[0];
+            if(!$email){
+                continue;
+            }
+
+            $this->setOutput(new urlFind($this->log, $this->msg, $text, $row[4] ));
+            $lists = $this->loadOutput(1);
+            $result = array();
+            foreach ($lists as $list){
+                $result[] = $this->checkEmail($list);
+            }
+
+            $link = $this->createExcel($result);
+
+            $this->sendEmail($email, $link);
+
+            $this->db->query('UPDATE needSend SET status = 1 WHERE time = '.$row[2]);
+
+            var_dump($lists);
+            exit();
+
+        }
+
+    }
     /**
      * @param $email
      * @param $link

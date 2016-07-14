@@ -35,11 +35,11 @@ class Parser
      * @var \Plasticbrain\FlashMessages\FlashMessages
      */
     public $msg;
-
     /**
      * @var string
      */
     public $file = 'file/search_at_this_moment.db';
+
 
     /**
      * @var SQLite3 database
@@ -83,11 +83,11 @@ class Parser
         $this->msg->setMsgWrapper("<p class='%s'>%s</p>");
         $this->msg->setCloseBtn('');
 
-        
+
         $this->user_id = $_SESSION['user_id'];
 
-
         $this->db = new SQLite3($this->file);
+
         $this->db->exec('CREATE TABLE IF NOT EXISTS email (user_id VARCHAR(255), time VARCHAR(255), type VARCHAR(255), email VARCHAR(255), message VARCHAR(255))');
 
 
@@ -99,23 +99,27 @@ class Parser
     public function setOutput(parserInterface $outputType)
     {
         $this->output = $outputType;
+
     }
 
     /**
      * @return mixed
      */
-    public function loadOutput()
+    public function loadOutput($noAjax = 0)
     {
         $load = $this->output->load();
 
         if (!$load) {
             return false;
-        }else{
+        } else {
 
             $data = new stdClass();
-            if(!is_array($load)){
+            if (!is_array($load)) {
                 $data->error = $load;
                 $load = array();
+            }
+            if($noAjax){
+                return $load;
             }
 
             $data->items = $load;
@@ -128,13 +132,13 @@ class Parser
             header("Expires: -1");
             try {
                 $json = json_encode($data);
-                if($json){
+                if ($json) {
                     print $json;
-                }else{
+                } else {
                     $this->validateJson(json_last_error());
                 }
 
-            }catch (Exception $e){
+            } catch (Exception $e) {
                 echo $e->getMessage();
             }
             exit();
@@ -230,145 +234,125 @@ class Parser
         $status = 0;
         $j = 0;
 
-        //foreach ($urls as $url) {
 
-             $url = urldecode($url);
-            //foreach ($this->contactUrl as $item) {
-            if (is_array($this->input->post('type'))) {
-                $t = $url[1];
-                $url = $url[0];
-                $url = trim($url);
+        $url = urldecode($url);
+
+        if (is_array($this->input->post('type'))) {
+            $t = $url[1];
+            $url = $url[0];
+            $url = trim($url);
+        } else {
+            $url = trim($url);
+            $url = parse_url($url);
+
+            if (isset($url['scheme'])) {
+                $url = $url['scheme'] . '://' . $url['host'];
             } else {
-                $url = trim($url);
-                $url = parse_url($url);
+                $url = 'http://' . $url['path'];
+            }
 
-                if(isset($url['scheme'])){
-                    $url = $url['scheme'] . '://' . $url['host'];
-                }else{
-                    $url = 'http://' . $url['path'];
-                }
+        }
+
+
+        $curl = new Curl();
+        $curl->get(trim($url));
+        $contentType = explode('=', $curl->responseHeaders['Content-Type']);
+
+
+        if ($curl->response != '' && $curl->errorCode >= 500) {
+
+            $this->log->error('Error: url (' . trim($url) . ') ' . $curl->errorCode . ': ' . $curl->errorMessage);
+            $results = array(
+                'url' => urlencode($url),
+                'title' => '',
+                'email' => 'Страница не открылась или открылась с ошибкой',
+                'status' => 0,
+                'message' => ' <i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Error: url (' . urlencode(trim($url)) . ') Код ошибки от браузера: ' . $curl->errorCode . '</p>'
+            );
+
+            $dataToFile = array(
+                time(),
+                $this->input->post("typeMethod"),
+                urlencode($url),
+                'Страница не открылась или открылась с ошибкой',
+            );
+            $this->writeToFile($dataToFile);
+
+
+        } else {
+            $emails = PhpMailExtractor::extract($curl->response);
+
+            if (!$emails) {
+
+                $posibleEmail = $this->findPosibleLinks($curl->response, $url);
+
+                if (count($posibleEmail) > 0 && $posibleEmail)
+                    if (count($emails) > 0 && $emails)
+                        $emails = array_merge($emails, $posibleEmail);
+                    else
+                        $emails = $posibleEmail;
 
             }
 
 
+            if (count($emails) > 0) {
 
-            $curl = new Curl();
-            $curl->get(trim($url));
-            $contentType = explode('=', $curl->responseHeaders['Content-Type']);
+                $results = array();
+                foreach ($emails as $email) {
+
+                    if (isset($contentType[1])) {
+                        if ($contentType[1] == 'UTF-8' || $contentType[1] == '')
+                            $title = PhpMailExtractor::pageTitle($curl->response);
+                        else
+                            $title = iconv($contentType[1], 'UTF-8', PhpMailExtractor::pageTitle($curl->response));
+                    } else {
+                        $title = PhpMailExtractor::pageTitle($curl->response);
+                    }
+
+                    $results[] = array(
+                        'url' => urlencode($url),
+                        'title' => urlencode($title),
+                        'email' => $email,
+                        'status' => 1,
+                        'message' => '<i class="large material-icons circle">thumb_up</i><p class="title" style="margin-top:10px;">По ссылке ' . urlencode(trim($url)) . '  email есть - ' . $email . '</p>'
+                    );
 
 
-            if ($curl->response != '' && $curl->errorCode >= 500) {
+                    $dataToFile = array(
+                        time(),
+                        $this->input->post("typeMethod"),
+                        urlencode($url),
+                        $email,
+                    );
+                    $this->writeToFile($dataToFile);
 
-                $this->log->error('Error: url (' . trim($url) . ') ' . $curl->errorCode . ': ' . $curl->errorMessage);
+
+                }
+
+                $status = 1;
+
+            } else {
+
                 $results = array(
                     'url' => urlencode($url),
                     'title' => '',
-                    'email' => 'Страница не открылась или открылась с ошибкой',
+                    'email' => 'Нет email',
                     'status' => 0,
-                    'message'=>' <i class="large material-icons circle">error</i><p class="title" style="margin-top:10px;">Error: url (' . urlencode(trim($url)) . ') Код ошибки от браузера: ' . $curl->errorCode .'</p>'
+                    'message' => '<i class="large material-icons circle">thumb_down</i><p class="title" style="margin-top:10px;">По ссылке ' . urlencode(trim($url)) . ' нет email</p>'
                 );
 
                 $dataToFile = array(
                     time(),
                     $this->input->post("typeMethod"),
                     urlencode($url),
-                    'Страница не открылась или открылась с ошибкой',
+                    'Нет email',
                 );
                 $this->writeToFile($dataToFile);
 
 
-                //$this->msg->info('По ссылке '.trim($url) .' нет email.');
-            } else {
-                $emails = PhpMailExtractor::extract($curl->response);
-
-                if (!$emails) {
-
-
-                    $posibleEmail = $this->findPosibleLinks($curl->response, $url);
-
-                    if (count($posibleEmail) > 0 && $posibleEmail)
-                        if (count($emails) > 0 && $emails)
-                            $emails = array_merge($emails, $posibleEmail);
-                        else
-                            $emails = $posibleEmail;
-
-                }
-
-
-                if (count($emails) > 0) {
-                    foreach ($emails as $email) {
-                        /*if ($this->input->post('type') == 'request') {
-                            $title = $t;
-                        } else {*/
-                        if (isset($contentType[1])) {
-                            if ($contentType[1] == 'UTF-8' || $contentType[1] == '')
-                                $title = PhpMailExtractor::pageTitle($curl->response);
-                            else
-                                $title = iconv($contentType[1], 'UTF-8', PhpMailExtractor::pageTitle($curl->response));
-                        } else {
-                            $title = PhpMailExtractor::pageTitle($curl->response);
-                        }
-
-                        //}
-
-                        $results = array(
-                            'url' => urlencode($url),
-                            'title' => urlencode($title),
-                            'email' => $email,
-                            'status' => 1,
-                            'message'=> '<i class="large material-icons circle">thumb_up</i><p class="title" style="margin-top:10px;">По ссылке '.urlencode(trim($url)).'  email есть - '.$email.'</p>'
-                        );
-
-
-                        /*fclose(fopen($this->file, 'a+b'));
-                        $f = fopen($this->file, 'r+b');
-                        flock($f, LOCK_EX);
-                        fwrite($f, json_encode($dataToFile));*/
-
-
-                        $dataToFile = array(
-                            time(),
-                            $this->input->post("typeMethod"),
-                            urlencode($url),
-                            $email,
-                        );
-                        $this->writeToFile($dataToFile);
-
-
-                        //fclose($this->file);
-
-                        //$this->msg->info('По ссылке '.trim($url).'  email есть - '.$email);
-                    }
-                    $status = 1;
-
-                } else {
-
-                    $results = array(
-                        'url' => urlencode($url),
-                        'title' => '',
-                        'email' => 'Нет email',
-                        'status' => 0,
-                        'message'=>'<i class="large material-icons circle">thumb_down</i><p class="title" style="margin-top:10px;">По ссылке '.urlencode(trim($url)) .' нет email</p>'
-                    );
-
-                    $dataToFile = array(
-                        time(),
-                        $this->input->post("typeMethod"),
-                        urlencode($url),
-                        'Нет email',
-                    );
-                    $this->writeToFile($dataToFile);
-
-                    //$this->msg->info('По ссылке '.trim($url) .' нет email');
-                }
             }
-            $curl->close();
-
-
-            //}
-
-
-        //}
+        }
+        $curl->close();
 
         return $results;
 
@@ -461,7 +445,8 @@ class Parser
     /**
      * @param $status
      */
-    public function validateJson($status){
+    public function validateJson($status)
+    {
 
         switch ($status) {
             case JSON_ERROR_NONE:
@@ -495,19 +480,20 @@ class Parser
     protected function writeToFile($dataToFile)
     {
         //file_put_contents($this->file, serialize($dataToFile) . PHP_EOL, FILE_APPEND | LOCK_EX);
-        if(!$this->user_id){
+        if (!$this->user_id) {
             $this->user_id = 0;
         }
-        
 
-        $this->db->exec("INSERT INTO email (`user_id`, `time`, `type`, `email`, `message`) VALUES ('".$this->user_id."','".time()."', '".$dataToFile[1]."','".$dataToFile[2]."','".$dataToFile[3]."')");
-        if($this->db->lastErrorMsg()!='not an error'){
+
+        $this->db->exec("INSERT INTO email (`user_id`, `time`, `type`, `email`, `message`) VALUES ('" . $this->user_id . "','" . time() . "', '" . $dataToFile[1] . "','" . $dataToFile[2] . "','" . $dataToFile[3] . "')");
+        if ($this->db->lastErrorMsg() != 'not an error') {
             echo $this->db->lastErrorMsg();
             exit();
         }
 
 
-
     }
-    
+
+
+
 }
